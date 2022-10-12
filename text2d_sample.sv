@@ -43,7 +43,7 @@ module text2d_sample_test;
         arr.resize(8, 4);
 
         $display("//----------------------------------");
-        $display("// write phase                      ");
+        $display("// write phase"                      );
         $display("//----------------------------------");
 
         wtxt = text2d_open("./sample.txt", "w", 8, "_", 0);
@@ -72,7 +72,7 @@ module text2d_sample_test;
         text2d_close(wtxt);
 
         $display("//----------------------------------");
-        $display("// read phase                       ");
+        $display("// read phase"                       );
         $display("//----------------------------------");
 
         arr.resize(10, 6);
@@ -90,7 +90,7 @@ module text2d_sample_test;
 
             for (int y = 0; y < 32; y += 4) begin
                 for (int x = 0; x < 32; x += 8) begin
-                    text2d_cache_read(rtxt, arr.data, x - 1, y - 1, 10, 6);
+                    text2d_cache_read(rtxt, arr.data, x - 1, y - 1, 10, 6, c + 1, c + 1);
 
                     $display("-- (x, y) = (%0d, %0d)", x, y);
                     for (int y = 0; y < 6; ++y) begin

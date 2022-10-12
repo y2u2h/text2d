@@ -157,17 +157,22 @@ class Text2D {
         return ret;
     }
 
-    int cache_read(void *data, const int cachex, const int cachey, const unsigned int read_width, const unsigned int read_height) {
+    int cache_read(void *data, const int cachex, const int cachey, const unsigned int read_width, const unsigned int read_height,
+                   const unsigned int stridex = 1, const unsigned int stridey = 1) {
         auto *d = static_cast<uint8_t *>(data);
         auto ret = (d == nullptr) ? -1 : 0;
 
         if (ret == 0) {
-            auto cnt = 0;
-            auto endx = cachex + static_cast<int>(read_width);
-            auto endy = cachey + static_cast<int>(read_height);
+            ret = ((stridex > 0) && (stridey > 0)) ? 0 : -1;
+        }
 
-            for (auto y = cachey; y < endy; ++y) {
-                for (auto x = cachex; x < endx; ++x) {
+        if (ret == 0) {
+            auto cnt = 0;
+            auto endx = cachex + static_cast<int>(read_width) * static_cast<int>(stridex);
+            auto endy = cachey + static_cast<int>(read_height) * static_cast<int>(stridey);
+
+            for (auto y = cachey; y < endy; y += stridey) {
+                for (auto x = cachex; x < endx; x += stridex) {
                     if ((y < 0) || (y >= static_cast<int>(m_cache_height))) {
                         d[cnt] = m_padding;
                     } else if ((x < 0) || (x >= static_cast<int>(m_cache_width))) {
@@ -259,9 +264,9 @@ int text2d_fwrite(void *handle)
 }
 
 #ifndef _DEBUG
-int text2d_cache_read(void *handle, const svOpenArrayHandle array, const int cachex, const int cachey, const unsigned int read_width, const unsigned int read_height)
+int text2d_cache_read(void *handle, const svOpenArrayHandle array, const int cachex, const int cachey, const unsigned int read_width, const unsigned int read_height, const unsigned int stridex, const unsigned int stridey)
 {
-    return static_cast<Text2D *>(handle)->cache_read(svGetArrayPtr(array), cachex, cachey, read_width, read_height);
+    return static_cast<Text2D *>(handle)->cache_read(svGetArrayPtr(array), cachex, cachey, read_width, read_height, stridex, stridey);
 }
 
 int text2d_cache_write(void *handle, const svOpenArrayHandle array, const int cachex, const int cachey, const unsigned int write_width, const unsigned int write_height)
@@ -269,9 +274,9 @@ int text2d_cache_write(void *handle, const svOpenArrayHandle array, const int ca
     return static_cast<Text2D *>(handle)->cache_write(svGetArrayPtr(array), cachex, cachey, write_width, write_height);
 }
 #else // _DEBUG
-int text2d_cache_read(void *handle, uint8_t *array, const int cachex, const int cachey, const unsigned int read_width, const unsigned int read_height)
+int text2d_cache_read(void *handle, uint8_t *array, const int cachex, const int cachey, const unsigned int read_width, const unsigned int read_height, const unsigned int stridex, const unsigned int stridey)
 {
-    return static_cast<Text2D *>(handle)->cache_read(static_cast<void *>(array), cachex, cachey, read_width, read_height);
+    return static_cast<Text2D *>(handle)->cache_read(static_cast<void *>(array), cachex, cachey, read_width, read_height, stridex, stridey);
 }
 
 int text2d_cache_write(void *handle, uint8_t *array, const int cachex, const int cachey, const unsigned int write_width, const unsigned int write_height)
@@ -297,7 +302,7 @@ int main() {
     auto randomize = [&]() { for (auto &a : arr) { a = mt(); } };
 
     std::cout << "//----------------------------------" << std::endl;
-    std::cout << "// write phase                      " << std::endl;
+    std::cout << "// write phase"                       << std::endl;
     std::cout << "//----------------------------------" << std::endl;
 
     Text2D *wtxt = (Text2D *)text2d_open("sample.txt", "w", 8, "_", 0);
@@ -327,7 +332,7 @@ int main() {
     text2d_close(wtxt);
 
     std::cout << "//----------------------------------" << std::endl;
-    std::cout << "// read phase                       " << std::endl;
+    std::cout << "// read phase"                        << std::endl;
     std::cout << "//----------------------------------" << std::endl;
 
     arr.resize(10 * 6);
@@ -343,7 +348,7 @@ int main() {
 
         for (auto y = 0; y < 32; y += 4) {
             for (auto x = 0; x < 32; x += 8) {
-                text2d_cache_read(rtxt, arr.data(), x - 1, y - 1, 10, 6);
+                text2d_cache_read(rtxt, arr.data(), x - 1, y - 1, 10, 6, c + 1, c + 1);
 
                 std::cout << std::dec << "-- (x, y) = (" << x << ", " << y << ")" << std::endl;
                 for (auto y = 0; y < 6; ++y) {
